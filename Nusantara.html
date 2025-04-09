@@ -2,126 +2,46 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Scorpio Ops - Tracking Device</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scorpio Ops — Tracking Device</title>
   <style>
     body {
-      font-family: monospace;
-      background: #0b0b0b;
-      color: #00ffcc;
-      padding: 20px;
+      background-color: #000;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      text-align: center;
+      padding: 30px;
     }
-    img.logo {
-      display: block;
-      margin: 0 auto 20px auto;
-      width: 100px;
-      filter: grayscale(100%) brightness(150%);
+    h1 {
+      color: red;
+      font-size: 20px;
+      margin-top: 40px;
     }
     h2 {
-      text-align: center;
-      color: #00ffff;
+      font-size: 14px;
+      color: #ccc;
     }
-    .info {
-      background-color: #111;
-      padding: 15px;
-      border: 1px solid #444;
-      margin: 20px auto;
-      width: 90%;
-      max-width: 600px;
-      border-radius: 10px;
+    .logo {
+      width: 100px;
+      margin-top: 30px;
     }
-    .label {
-      color: #999;
-    }
-    a {
-      color: #00ffcc;
-      text-decoration: underline;
+    iframe {
+      border: none;
+      margin-top: 30px;
     }
   </style>
 </head>
 <body>
+  <img src="logo_garuda.png" alt="Logo Garuda" class="logo" />
+  <h2>Scorpio Ops — Tracking Device</h2>
+  <h1>ANDA TIDAK MEMILIKI IZIN UNTUK MENGAKSES DATA BASE INI</h1>
 
-  <img src="https://borneo101.github.io/DataBase/garuda_ai.png" class="logo" alt="Garuda AI"/>
-
-  <h2>SCORPIO OPS - TRACKING DEVICE</h2>
-
-  <div class="info" id="infoBox">
-    <pre id="output">Memuat data perangkat...</pre>
-  </div>
-
-  <script>
-    function formatDate(d) {
-      return d.toLocaleString("id-ID") + "\nUTC: " + d.toUTCString();
-    }
-
-    async function getInfo() {
-      let id = localStorage.getItem("client_id");
-      if (!id) {
-        id = "USR-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-        localStorage.setItem("client_id", id);
-      }
-
-      const output = document.getElementById("output");
-      const now = new Date();
-      const timeString = formatDate(now);
-
-      const ip = await fetch("https://api.ipify.org?format=json")
-        .then(res => res.json())
-        .then(data => data.ip)
-        .catch(() => "Unknown");
-
-      const ua = navigator.userAgent;
-      const lang = navigator.language;
-      const platform = navigator.platform;
-      const online = navigator.onLine;
-      const screenSize = screen.width + "x" + screen.height;
-
-      let battery = "Unknown";
-      let charging = "Unknown";
-
-      if (navigator.getBattery) {
-        const b = await navigator.getBattery();
-        battery = Math.round(b.level * 100) + "%";
-        charging = b.charging ? "Charging" : "Not Charging";
-      }
-
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        const acc = pos.coords.accuracy.toFixed(1);
-        const alt = pos.coords.altitude || "Unknown";
-        const spd = pos.coords.speed || "Unknown";
-        const head = pos.coords.heading || "Unknown";
-
-        output.textContent = `
-Scorpio Ops:[${id}]
-[TRACKING DEVICE]
-IP: ${ip}
-Battery: ${battery} (${charging})
-User Agent: ${ua}
-Language: ${lang}
-Platform: ${platform}
-Online: ${online}
-Screen: ${screenSize}
-
-Lokasi:
-Latitude: ${lat}
-Longitude: ${lon}
-Accuracy: ${acc}m
-Altitude: ${alt}
-Speed: ${spd}
-Heading: ${head}
-
-Local Time: ${timeString}
-Map: https://maps.google.com/?q=${lat},${lon}
-        `.trim();
-      }, err => {
-        output.textContent = "Gagal mengambil lokasi: " + err.message;
-      });
-    }
-
-    getInfo();
-  </script>
-
+  <!-- Peta Lokasi Tersamarkan -->
+  <iframe
+    src="https://www.google.com/maps?q=-6.656417,106.248639&z=15&output=embed"
+    width="300"
+    height="250"
+    allowfullscreen
+  ></iframe>
 </body>
 </html>
