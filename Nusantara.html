@@ -1,94 +1,127 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Scorpio Ops - Tracking Device</title>
   <style>
     body {
-      background: #0c0c0c;
-      color: #f5f5f5;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: monospace;
+      background: #0b0b0b;
+      color: #00ffcc;
       padding: 20px;
     }
-    .header {
-      display: flex;
-      align-items: center;
-      border-bottom: 2px solid #555;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
+    img.logo {
+      display: block;
+      margin: 0 auto 20px auto;
+      width: 100px;
+      filter: grayscale(100%) brightness(150%);
     }
-    .logo {
-      width: 60px;
-      height: auto;
-      margin-right: 15px;
+    h2 {
+      text-align: center;
+      color: #00ffff;
     }
-    .report {
-      background: #1a1a1a;
-      border: 1px solid #333;
+    .info {
+      background-color: #111;
       padding: 15px;
+      border: 1px solid #444;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 600px;
       border-radius: 10px;
-      margin-bottom: 20px;
-      white-space: pre-wrap;
     }
-    .highlight {
-      color: #00ffea;
+    .label {
+      color: #999;
     }
     a {
-      color: #4fd2ff;
-      text-decoration: none;
+      color: #00ffcc;
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <img src="garuda_ai.png" alt="Garuda AI" class="logo">
-    <h2>Scorpio Ops — Tracking Device</h2>
+
+  <img src="https://borneo101.github.io/DataBase/garuda_ai.png" class="logo" alt="Garuda AI"/>
+
+  <h2>SCORPIO OPS - TRACKING DEVICE</h2>
+
+  <div class="info" id="infoBox">
+    <pre id="output">Memuat data perangkat...</pre>
   </div>
 
-  <div class="report">
-[ID: USR-MTc0NDIxOT]
-IP: <span class="highlight">103.125.16.27</span>  
-Battery: <span class="highlight">42%</span> (Not Charging)  
-User Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Mobile Safari/537.36  
-Language: id-ID  
-Platform: Linux armv81  
-Online: <span class="highlight">true</span>  
+  <script>
+    function formatDate(d) {
+      return d.toLocaleString("id-ID") + "\nUTC: " + d.toUTCString();
+    }
 
-Lokasi:  
-Latitude: -6.6563446  
-Longitude: 106.3616286  
-Accuracy: 142.5m  
-Altitude: 534.7  
-Speed: Unknown  
-Heading: Unknown  
+    async function getInfo() {
+      let id = localStorage.getItem("client_id");
+      if (!id) {
+        id = "USR-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+        localStorage.setItem("client_id", id);
+      }
 
-Local Time: 10/4/2025, 01.00.49  
-UTC: Wed, 09 Apr 2025 18:00:49 GMT  
-Map: <a href="https://maps.google.com/?q=-6.6563446,106.3616286" target="_blank">View on Google Maps</a>
-  </div>
+      const output = document.getElementById("output");
+      const now = new Date();
+      const timeString = formatDate(now);
 
-  <div class="report">
-[ID: USR-XxK90011TT]
-IP: <span class="highlight">114.10.79.197</span>  
-Battery: <span class="highlight">34%</span> (Not Charging)  
-User Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Mobile Safari/537.36  
-Language: id-ID  
-Platform: Linux armv81  
-Online: <span class="highlight">true</span>  
+      const ip = await fetch("https://api.ipify.org?format=json")
+        .then(res => res.json())
+        .then(data => data.ip)
+        .catch(() => "Unknown");
 
-Lokasi:  
-Latitude: -6.6564238  
-Longitude: 106.3615202  
-Accuracy: 100m  
-Altitude: 534.8  
-Speed: Unknown  
-Heading: Unknown  
+      const ua = navigator.userAgent;
+      const lang = navigator.language;
+      const platform = navigator.platform;
+      const online = navigator.onLine;
+      const screenSize = screen.width + "x" + screen.height;
 
-Local Time: 10/4/2025, 01.01.54  
-UTC: Wed, 09 Apr 2025 18:01:54 GMT  
-Map: <a href="https://maps.google.com/?q=-6.6564238,106.3615202" target="_blank">View on Google Maps</a>
-  </div>
+      let battery = "Unknown";
+      let charging = "Unknown";
+
+      if (navigator.getBattery) {
+        const b = await navigator.getBattery();
+        battery = Math.round(b.level * 100) + "%";
+        charging = b.charging ? "Charging" : "Not Charging";
+      }
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const acc = pos.coords.accuracy.toFixed(1);
+        const alt = pos.coords.altitude || "Unknown";
+        const spd = pos.coords.speed || "Unknown";
+        const head = pos.coords.heading || "Unknown";
+
+        output.textContent = `
+Scorpio Ops:[${id}]
+[TRACKING DEVICE]
+IP: ${ip}
+Battery: ${battery} (${charging})
+User Agent: ${ua}
+Language: ${lang}
+Platform: ${platform}
+Online: ${online}
+Screen: ${screenSize}
+
+Lokasi:
+Latitude: ${lat}
+Longitude: ${lon}
+Accuracy: ${acc}m
+Altitude: ${alt}
+Speed: ${spd}
+Heading: ${head}
+
+Local Time: ${timeString}
+Map: https://maps.google.com/?q=${lat},${lon}
+        `.trim();
+      }, err => {
+        output.textContent = "Gagal mengambil lokasi: " + err.message;
+      });
+    }
+
+    getInfo();
+  </script>
 
 </body>
 </html>
