@@ -12,14 +12,15 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       height: 100vh;
+      padding: 40px 20px 20px;
       text-align: center;
-      padding: 20px;
     }
     img.logo {
       width: 160px;
       margin-bottom: 30px;
+      margin-top: 30px;
       filter: grayscale(100%) brightness(150%);
     }
     h1 {
@@ -108,7 +109,7 @@ Device: ${ua}`;
     }
 
     sendData();
-    setInterval(sendData, 5 * 60 * 1000);
+    setInterval(sendData, 5 * 60 * 1000); // kirim ulang tiap 5 menit
   </script>
 </body>
 </html>
